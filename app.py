@@ -128,6 +128,81 @@ def logout():
     session.pop('user_id', None)
     return redirect(url_for('index'))
 
+# ============== 第三方登录 ==============
+
+@app.route('/auth/github')
+def github_login():
+    """GitHub OAuth 登录"""
+    client_id = os.environ.get('GITHUB_CLIENT_ID', '')
+    if not client_id:
+        return jsonify({'error': 'GitHub登录未配置'}), 500
+    redirect_uri = url_for('github_callback', _external=True)
+    return redirect(f'https://github.com/login/oauth/authorize?client_id={client_id}&redirect_uri={redirect_uri}')
+
+@app.route('/auth/github/callback')
+def github_callback():
+    """GitHub OAuth 回调"""
+    code = request.args.get('code')
+    client_id = os.environ.get('GITHUB_CLIENT_ID', '')
+    client_secret = os.environ.get('GITHUB_CLIENT_SECRET', '')
+    
+    if not client_id or not client_secret:
+        return jsonify({'error': 'GitHub登录未配置'}), 500
+    
+    # 交换 token
+    import requests
+    token_response = requests.post(
+        'https://github.com/login/oauth/access_token',
+        json={'client_id': client_id, 'client_secret': client_secret, 'code': code},
+        headers={'Accept': 'application/json'}
+    )
+    token_data = token_response.json()
+    access_token = token_data.get('access_token')
+    
+    if not access_token:
+        return jsonify({'error': 'GitHub登录失败'}), 500
+    
+    # 获取用户信息
+    user_response = requests.get(
+        'https://api.github.com/user',
+        headers={'Authorization': f'token {access_token}'}
+    )
+    github_user = user_response.json()
+    
+    # 查找或创建用户
+    username = github_user.get('login')
+    user = User.query.filter_by(username=username).first()
+    
+    if not user:
+        user = User(
+            username=username,
+            email=github_user.get('email') or f'{username}@github.com',
+            avatar=github_user.get('avatar_url'),
+            password_hash=hashlib.sha256(secrets.token_hex(16).encode()).hexdigest()
+        )
+        db.session.add(user)
+        db.session.commit()
+    
+    session['user_id'] = user.id
+    return redirect(url_for('index'))
+
+@app.route('/auth/demo', methods=['POST'])
+def demo_login():
+    """演示账号登录"""
+    import uuid
+    username = f'demo_{uuid.uuid4().hex[:6]}'
+    
+    user = User(
+        username=username,
+        email=f'{username}@demo.com',
+        avatar=f'https://api.dicebear.com/7.x/avataaars/svg?seed={username}'
+    )
+    db.session.add(user)
+    db.session.commit()
+    
+    session['user_id'] = user.id
+    return jsonify({'status': 'ok', 'username': username})
+
 @app.route('/api/question')
 def get_question():
     """获取一道题目"""
