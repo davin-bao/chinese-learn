@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}VIP会员 - ChineseLearn Pro{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>💎 升级VIP</h1>
+        <p>解锁全部功能，畅学无限</p>
+    </div>
+    
+    {% if user.is_vip %}
+    <div class="card" style="text-align: center;">
+        <div style="font-size: 4rem; margin-bottom: 20px;">🎉</div>
+        <h2 style="margin-bottom: 10px;">您已是VIP会员</h2>
+        <p style="color: #666; margin-bottom: 20px;">有效期至: {{ user.vip_expire.strftime('%Y-%m-%d') }}</p>
+        <a href="/" class="btn btn-primary" style="display: inline-block; width: auto;">开始学习</a>
+    </div>
+    {% else %}
+    
+    <div class="card">
+        <h3 style="margin-bottom: 16px;">VIP特权</h3>
+        <ul style="color: #666; line-height: 2;">
+            <li>✅ 无限答题次数</li>
+            <li>✅ 完整中文解析</li>
+            <li>✅ 高级难度题目</li>
+            <li>✅ 专属学习报告</li>
+            <li>✅ 优先客服支持</li>
+        </ul>
+    </div>
+    
+    <div class="vip-plans">
+        <div class="vip-plan">
+            <div>
+                <div class="plan-name">月卡</div>
+                <p style="color: #666; font-size: 0.9rem;">30天VIP</p>
+            </div>
+            <div class="plan-price">¥29</div>
+        </div>
+        
+        <div class="vip-plan recommended">
+            <div>
+                <div class="plan-name">年卡</div>
+                <p style="color: #666; font-size: 0.9rem;">365天VIP</p>
+            </div>
+            <div class="plan-price">¥199</div>
+        </div>
+    </div>
+    
+    <div class="card" style="margin-top: 20px;">
+        <h3 style="margin-bottom: 16px;">支付方式</h3>
+        <p style="color: #666; margin-bottom: 16px;">当前仅支持人工确认支付</p>
+        
+        <div class="message" style="background: #fff8e1; color: #f57c00;">
+            📱 加客服微信: chinese-learn-pro<br>
+            备注: 开通VIP<br>
+            确认后立即开通
+        </div>
+        
+        <button onclick="simulatePayment()" class="btn btn-vip" style="width: 100%; margin-top: 16px;">
+            模拟支付（测试用）
+        </button>
+    </div>
+    
+    {% endif %}
+    
+    <p style="text-align: center; margin-top: 20px;">
+        <a href="/" style="color: white;">返回首页</a>
+    </p>
+</div>
+
+<script>
+function simulatePayment() {
+    if (!confirm('确认购买年卡VIP (¥199)？')) return;
+    
+    axios.post('/api/vip/buy', { plan: 'yearly' })
+        .then(response => {
+            alert('购买成功！' + response.data.message);
+            location.reload();
+        })
+        .catch(error => {
+            alert('购买失败: ' + (error.response?.data?.message || error.message));
+        });
+}
+</script>
+{% endblock %}

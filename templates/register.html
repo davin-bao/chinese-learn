@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}注册 - ChineseLearn Pro{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>创建账号</h1>
+        <p>开始你的中文学习之旅</p>
+    </div>
+    
+    <div class="card">
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; color: #666;">用户名</label>
+            <input type="text" id="username" placeholder="请输入用户名" style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 1rem;">
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; color: #666;">密码</label>
+            <input type="password" id="password" placeholder="请输入密码" style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 1rem;">
+        </div>
+        
+        <button onclick="doRegister()" class="btn btn-primary">注册</button>
+        
+        <p style="text-align: center; margin-top: 16px; color: #666;">
+            已有账号？<a href="/login" style="color: #667eea;">立即登录</a>
+        </p>
+        
+        <p style="text-align: center; margin-top: 10px;">
+            <a href="/" style="color: #666;">返回首页</a>
+        </p>
+    </div>
+</div>
+
+<script>
+async function doRegister() {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    if (!username || !password) {
+        alert('请填写用户名和密码');
+        return;
+    }
+    
+    if (password.length < 6) {
+        alert('密码至少6位');
+        return;
+    }
+    
+    try {
+        const response = await axios.post('/register', { username, password });
+        if (response.data.status === 'ok') {
+            alert('注册成功！');
+            window.location.href = '/';
+        }
+    } catch (error) {
+        alert(error.response?.data?.error || '注册失败');
+    }
+}
+</script>
+{% endblock %}

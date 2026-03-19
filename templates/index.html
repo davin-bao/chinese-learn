@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}ChineseLearn Pro - 学中文{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <h1>🇨🇳 ChineseLearn Pro</h1>
+        <p>用英文对照学中文，轻松有趣</p>
+    </div>
+    
+    {% if user %}
+    <!-- Logged in user view -->
+    <div class="card">
+        <div class="user-info">
+            <img src="{{ user.avatar or 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.username }}" class="user-avatar" alt="avatar">
+            <div>
+                <div class="user-name">{{ user.username }}</div>
+                {% if is_vip %}
+                <span class="vip-badge">VIP会员</span>
+                {% endif %}
+            </div>
+            <a href="/logout" style="margin-left: auto; color: #666; text-decoration: none;">退出</a>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <h3 id="totalAnswer">0</h3>
+                <p>答题总数</p>
+            </div>
+            <div class="stat-item">
+                <h3 id="accuracy">0%</h3>
+                <p>正确率</p>
+            </div>
+            <div class="stat-item">
+                <h3>{{ free_remaining }}</h3>
+                <p>今日免费</p>
+            </div>
+        </div>
+        
+        {% if not is_vip %}
+        <a href="/vip" class="btn btn-vip">升级VIP无限答题</a>
+        {% endif %}
+    </div>
+    
+    <!-- Quiz Card -->
+    <div class="card question-card">
+        <div id="questionArea">
+            <p class="question-english" id="questionText">加载中...</p>
+            
+            <div class="options" id="optionsArea">
+                <!-- Options will be inserted here -->
+            </div>
+        </div>
+        
+        <div id="resultArea" style="display: none;">
+            <p id="resultMessage" style="font-size: 1.2rem; margin-bottom: 20px;"></p>
+            <button class="btn btn-primary" onclick="nextQuestion()">下一题</button>
+        </div>
+    </div>
+    
+    {% if not is_vip %}
+    <div class="trial-info">
+        🔥 今日免费次数: {{ free_remaining }}/3 | 升级VIP无限畅学
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- Guest view -->
+    <div class="card">
+        <div class="trial-info">
+            🎮 游客也可试用！每日免费3道题
+        </div>
+        
+        <div class="question-card">
+            <div id="questionArea">
+                <p class="question-english" id="questionText">加载中...</p>
+                
+                <div class="options" id="optionsArea">
+                    <!-- Options will be inserted here -->
+                </div>
+            </div>
+            
+            <div id="resultArea" style="display: none;">
+                <p id="resultMessage" style="font-size: 1.2rem; margin-bottom: 20px;"></p>
+                <button class="btn btn-primary" onclick="nextQuestion()">下一题</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Login -->
+    <div class="card">
+        <h3 style="margin-bottom: 16px; text-align: center;">登录以保存进度和解锁更多</h3>
+        
+        <div class="login-methods">
+            <a href="/auth/github" class="login-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                GitHub 登录
+            </a>
+            
+            <button onclick="demoLogin()" class="login-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                演示账号试用
+            </button>
+        </div>
+        
+        <p style="text-align: center; margin-top: 16px; color: #666; font-size: 0.9rem;">
+            登录后可保存学习进度，开通VIP享无限题库
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+let currentQuestion = null;
+let selectedAnswer = null;
+let answered = false;
+
+async function loadQuestion() {
+    try {
+        const response = await axios.get('/api/question');
+        const data = response.data;
+        
+        if (data.error === 'free_limit') {
+            showLoginPrompt(data.message);
+            return;
+        }
+        
+        currentQuestion = data;
+        document.getElementById('questionText').textContent = data.english;
+        
+        const optionsArea = document.getElementById('optionsArea');
+        optionsArea.innerHTML = '';
+        
+        data.options.forEach((option, index) => {
+            const btn = document.createElement('div');
+            btn.className = 'option';
+            btn.textContent = option;
+            btn.onclick = () => selectOption(index);
+            optionsArea.appendChild(btn);
+        });
+        
+        document.getElementById('questionArea').style.display = 'block';
+        document.getElementById('resultArea').style.display = 'none';
+        
+    } catch (error) {
+        console.error(error);
+        if (error.response?.data?.error === 'free_limit') {
+            showLoginPrompt(error.response.data.message);
+        }
+    }
+}
+
+function selectOption(index) {
+    if (answered) return;
+    
+    selectedAnswer = index;
+    answered = true;
+    
+    // 高亮选项
+    const options = document.querySelectorAll('.option');
+    options.forEach((opt, i) => {
+        opt.classList.remove('selected');
+        if (i === index) opt.classList.add('selected');
+    });
+    
+    // 提交答案
+    axios.post('/api/answer', {
+        question_id: currentQuestion.id,
+        answer_index: index
+    }).then(response => {
+        const result = response.data;
+        
+        // 显示正确/错误
+        if (result.correct) {
+            options[index].classList.add('correct');
+        } else {
+            options[index].classList.add('wrong');
+            options[result.correct_answer].classList.add('correct');
+        }
+        
+        // 显示答案解释
+        let message = result.correct ? '✅ 回答正确！' : '❌ 回答错误！';
+        
+        if (currentQuestion.is_logged_in && currentQuestion.is_vip) {
+            message += '\n' + result.chinese;
+        } else if (result.chinese) {
+            message += '\n\n答案: ' + result.chinese;
+            if (!currentQuestion.is_logged_in) {
+                message += '\n(登录后可查看完整解析)';
+            }
+        }
+        
+        document.getElementById('resultMessage').textContent = message;
+        document.getElementById('questionArea').style.display = 'none';
+        document.getElementById('resultArea').style.display = 'block';
+        
+        // 更新统计
+        if (typeof updateStats === 'function') updateStats();
+        
+    }).catch(error => {
+        console.error(error);
+    });
+}
+
+function nextQuestion() {
+    answered = false;
+    selectedAnswer = null;
+    loadQuestion();
+}
+
+function showLoginPrompt(message) {
+    document.getElementById('questionArea').innerHTML = `
+        <div style="text-align: center; padding: 40px 20px;">
+            <p style="font-size: 1.2rem; margin-bottom: 20px;">${message}</p>
+            <a href="/login" class="btn btn-primary" style="display: inline-block; width: auto;">立即登录</a>
+        </div>
+    `;
+}
+
+async function demoLogin() {
+    try {
+        const response = await axios.post('/auth/demo', {
+            username: 'User' + Math.floor(Math.random() * 10000)
+        });
+        if (response.data.status === 'ok') {
+            location.reload();
+        }
+    } catch (error) {
+        alert('登录失败');
+    }
+}
+
+function updateStats() {
+    axios.get('/api/stats').then(response => {
+        const data = response.data;
+        document.getElementById('totalAnswer').textContent = data.total;
+        document.getElementById('accuracy').textContent = data.accuracy + '%';
+    }).catch(() => {});
+}
+
+// 初始化
+loadQuestion();
+{% if user %}
+updateStats();
+{% endif %}
+</script>
+{% endblock %}
