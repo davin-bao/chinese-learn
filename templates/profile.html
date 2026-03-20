@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}个人资料 - ChineseLearn Pro{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>👤 个人资料</h1>
+        <p>管理你的账户信息</p>
+    </div>
+    
+    {% if user %}
+    <div class="card">
+        <div class="profile-header">
+            <img src="{{ user.avatar or 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.username }}" 
+                 class="profile-avatar" alt="avatar">
+            <div class="profile-info">
+                <h2>{{ user.username }}</h2>
+                <p>{{ user.email }}</p>
+                {% if user.is_vip %}
+                <span class="vip-badge">VIP会员 至 {{ user.vip_expire.strftime('%Y-%m-%d') }}</span>
+                {% else %}
+                <span class="badge badge-free">免费用户</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3 style="margin-bottom: 16px;">学习统计</h3>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-number" id="totalQuestions">0</div>
+                <div class="stat-label">总答题数</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="correctCount">0</div>
+                <div class="stat-label">正确答题</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="accuracyRate">0%</div>
+                <div class="stat-label">正确率</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number" id="streakDays">0</div>
+                <div class="stat-label">连续学习</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3 style="margin-bottom: 16px;">账户设置</h3>
+        <div class="menu-list">
+            <a href="/history" class="menu-item">
+                <span class="menu-icon">📚</span>
+                <span>学习历史</span>
+                <span class="menu-arrow">›</span>
+            </a>
+            <a href="/achievements" class="menu-item">
+                <span class="menu-icon">🏆</span>
+                <span>成就系统</span>
+                <span class="menu-arrow">›</span>
+            </a>
+            <a href="/leaderboard" class="menu-item">
+                <span class="menu-icon">📊</span>
+                <span>排行榜</span>
+                <span class="menu-arrow">›</span>
+            </a>
+            <a href="/settings" class="menu-item">
+                <span class="menu-icon">⚙️</span>
+                <span>设置</span>
+                <span class="menu-arrow">›</span>
+            </a>
+            <a href="/vip" class="menu-item">
+                <span class="menu-icon">💎</span>
+                <span>VIP会员</span>
+                <span class="menu-arrow">›</span>
+            </a>
+            <a href="/about" class="menu-item">
+                <span class="menu-icon">ℹ️</span>
+                <span>关于我们</span>
+                <span class="menu-arrow">›</span>
+            </a>
+            <a href="/contact" class="menu-item">
+                <span class="menu-icon">📞</span>
+                <span>联系我们</span>
+                <span class="menu-arrow">›</span>
+            </a>
+        </div>
+    </div>
+    
+    <a href="/logout" class="btn btn-danger">退出登录</a>
+    
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <a href="/" class="nav-item">
+            <span class="nav-icon">🏠</span>
+            <span>首页</span>
+        </a>
+        <a href="/learn" class="nav-item">
+            <span class="nav-icon">📖</span>
+            <span>学习</span>
+        </a>
+        <a href="/courses" class="nav-item">
+            <span class="nav-icon">📚</span>
+            <span>课程</span>
+        </a>
+        <a href="/profile" class="nav-item active">
+            <span class="nav-icon">👤</span>
+            <span>我的</span>
+        </a>
+    </div>
+    
+    {% else %}
+    <div class="card" style="text-align: center;">
+        <p style="margin-bottom: 20px;">请先登录查看个人资料</p>
+        <a href="/login" class="btn btn-primary">立即登录</a>
+    </div>
+    {% endif %}
+    
+    <p style="text-align: center; margin-top: 20px;">
+        <a href="/" style="color: white;">返回首页</a>
+    </p>
+</div>
+
+<script>
+async function loadStats() {
+    try {
+        const response = await axios.get('/api/stats');
+        const data = response.data;
+        
+        document.getElementById('totalQuestions').textContent = data.total || 0;
+        document.getElementById('correctCount').textContent = data.correct || 0;
+        document.getElementById('accuracyRate').textContent = (data.accuracy || 0) + '%';
+        document.getElementById('streakDays').textContent = Math.floor((data.total || 0) / 3);
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+loadStats();
+</script>
+
+<style>
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 0;
+    border-bottom: 1px solid #eee;
+}
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+}
+.profile-info h2 {
+    margin-bottom: 4px;
+}
+.profile-info p {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+.badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+}
+.badge-free {
+    background: #e0e0e0;
+    color: #666;
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+.stat-box {
+    background: #f8f9ff;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+}
+.stat-number {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #667eea;
+    margin-bottom: 4px;
+}
+.stat-label {
+    font-size: 0.85rem;
+    color: #666;
+}
+.menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #333;
+    transition: all 0.2s;
+}
+.menu-item:hover {
+    background: #e8edff;
+}
+.menu-icon {
+    font-size: 1.2rem;
+}
+.menu-arrow {
+    margin-left: auto;
+    color: #999;
+    font-size: 1.2rem;
+}
+.btn-danger {
+    background: #f44336;
+    color: white;
+    margin-top: 20px;
+}
+.bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    background: white;
+    padding: 12px 0;
+    border-radius: 16px;
+    margin-top: 20px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+}
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+    color: #999;
+    font-size: 0.75rem;
+}
+.nav-item.active {
+    color: #667eea;
+}
+.nav-icon {
+    font-size: 1.3rem;
+}
+</style>
+{% endblock %}

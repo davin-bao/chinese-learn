@@ -1,0 +1,500 @@
+{% extends "base.html" %}
+
+{% block title %}排行榜 - ChineseLearn Pro{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>🏆 排行榜</h1>
+        <p>与全球学习者竞争</p>
+    </div>
+    
+    <!-- 时间筛选 -->
+    <div class="time-tabs">
+        <button class="tab active" data-period="week">本周</button>
+        <button class="tab" data-period="month">本月</button>
+        <button class="tab" data-period="all">全部</button>
+    </div>
+    
+    <!-- 顶部前三名 -->
+    <div class="top-three">
+        <div class="rank-card second">
+            <div class="rank-medal">🥈</div>
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=user2" class="rank-avatar" alt="avatar">
+            <div class="rank-name">Alice</div>
+            <div class="rank-score">2,847</div>
+            <div class="rank-label">答题数</div>
+        </div>
+        
+        <div class="rank-card first">
+            <div class="crown">👑</div>
+            <div class="rank-medal">🥇</div>
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=user1" class="rank-avatar" alt="avatar">
+            <div class="rank-name">David</div>
+            <div class="rank-score">3,521</div>
+            <div class="rank-label">答题数</div>
+        </div>
+        
+        <div class="rank-card third">
+            <div class="rank-medal">🥉</div>
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=user3" class="rank-avatar" alt="avatar">
+            <div class="rank-name">Emma</div>
+            <div class="rank-score">2,634</div>
+            <div class="rank-label">答题数</div>
+        </div>
+    </div>
+    
+    <!-- 用户排名 -->
+    <div class="card user-rank-card">
+        <div class="user-rank-info">
+            <span class="user-rank-num">#42</span>
+            <img src="{{ user.avatar if user else 'https://api.dicebear.com/7.x/avataaars/svg?seed=guest' }}" 
+                 class="user-rank-avatar" alt="avatar">
+            <div>
+                <div class="user-rank-name">{{ user.username if user else '游客' }}</div>
+                <div class="user-rank-detail">还需 28 题进入前40</div>
+            </div>
+        </div>
+        <div class="user-rank-score">
+            <span class="score-num">156</span>
+            <span class="score-label">答题数</span>
+        </div>
+    </div>
+    
+    <!-- 排行榜列表 -->
+    <div class="card">
+        <h3 class="section-title">📊 完整排名</h3>
+        
+        <div class="leaderboard-list" id="leaderboardList">
+            <!-- 列表项将通过JS渲染 -->
+        </div>
+    </div>
+    
+    <!-- 分类排行 -->
+    <div class="card">
+        <h3 class="section-title">📈 分类排行</h3>
+        
+        <div class="category-ranks">
+            <div class="category-rank-item">
+                <div class="category-icon">💬</div>
+                <div class="category-info">
+                    <span class="category-name">日常对话</span>
+                    <span class="category-top">TOP: David - 892题</span>
+                </div>
+                <button class="btn btn-sm">查看</button>
+            </div>
+            
+            <div class="category-rank-item">
+                <div class="category-icon">✈️</div>
+                <div class="category-info">
+                    <span class="category-name">旅行用语</span>
+                    <span class="category-top">TOP: Alice - 654题</span>
+                </div>
+                <button class="btn btn-sm">查看</button>
+            </div>
+            
+            <div class="category-rank-item">
+                <div class="category-icon">💼</div>
+                <div class="category-info">
+                    <span class="category-name">商务交流</span>
+                    <span class="category-top">TOP: Emma - 521题</span>
+                </div>
+                <button class="btn btn-sm">查看</button>
+            </div>
+            
+            <div class="category-rank-item">
+                <div class="category-icon">📖</div>
+                <div class="category-info">
+                    <span class="category-name">学习考试</span>
+                    <span class="category-top">TOP: John - 478题</span>
+                </div>
+                <button class="btn btn-sm">查看</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 奖励说明 -->
+    <div class="card reward-card">
+        <h3>🎁 排行榜奖励</h3>
+        <div class="rewards">
+            <div class="reward-item">
+                <span class="reward-rank">🥇 第1名</span>
+                <span class="reward-prize">¥200 优惠券 + VIP 30天</span>
+            </div>
+            <div class="reward-item">
+                <span class="reward-rank">🥈 第2名</span>
+                <span class="reward-prize">¥100 优惠券 + VIP 14天</span>
+            </div>
+            <div class="reward-item">
+                <span class="reward-rank">🥉 第3名</span>
+                <span class="reward-prize">¥50 优惠券 + VIP 7天</span>
+            </div>
+        </div>
+        <p class="reward-note">每周一结算，周榜重置</p>
+    </div>
+    
+    {% if not user %}
+    <div class="card guest-notice">
+        <p>登录后可参与排行榜，与全球学习者竞争</p>
+        <div class="guest-actions">
+            <a href="/login" class="btn btn-primary">登录</a>
+            <a href="/register" class="btn btn-secondary">注册</a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <a href="/" class="nav-item">
+            <span class="nav-icon">🏠</span>
+            <span>首页</span>
+        </a>
+        <a href="/learn" class="nav-item">
+            <span class="nav-icon">📖</span>
+            <span>学习</span>
+        </a>
+        <a href="/leaderboard" class="nav-item active">
+            <span class="nav-icon">🏆</span>
+            <span>排行</span>
+        </a>
+        <a href="/profile" class="nav-item">
+            <span class="nav-icon">👤</span>
+            <span>我的</span>
+        </a>
+    </div>
+</div>
+
+<style>
+.time-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+.tab {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+.tab.active, .tab:hover {
+    background: white;
+    color: #667eea;
+}
+.top-three {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+.rank-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px 16px;
+    text-align: center;
+    position: relative;
+    flex: 1;
+    max-width: 120px;
+}
+.rank-card.first {
+    order: 2;
+    padding: 24px 16px;
+    background: linear-gradient(180deg, #fff9c4, #fff59d);
+    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
+}
+.rank-card.second {
+    order: 1;
+}
+.rank-card.third {
+    order: 3;
+}
+.crown {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.5rem;
+}
+.rank-medal {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+.rank-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-bottom: 8px;
+    border: 3px solid #e0e0e0;
+}
+.rank-card.first .rank-avatar {
+    width: 60px;
+    height: 60px;
+    border-color: #ffd700;
+}
+.rank-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+.rank-score {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #667eea;
+}
+.rank-label {
+    font-size: 0.7rem;
+    color: #999;
+}
+.user-rank-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    margin-bottom: 20px;
+}
+.user-rank-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.user-rank-num {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+.user-rank-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: 2px solid white;
+}
+.user-rank-name {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+.user-rank-detail {
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+.user-rank-score {
+    text-align: right;
+}
+.score-num {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+.score-label {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+.section-title {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
+}
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.leaderboard-item:last-child {
+    border-bottom: none;
+}
+.leaderboard-rank {
+    width: 30px;
+    font-weight: bold;
+    color: #999;
+}
+.leaderboard-rank.top-3 {
+    color: #ffd700;
+}
+.leaderboard-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+.leaderboard-info {
+    flex: 1;
+}
+.leaderboard-name {
+    font-weight: 500;
+}
+.leaderboard-detail {
+    font-size: 0.8rem;
+    color: #999;
+}
+.leaderboard-score {
+    font-weight: bold;
+    color: #667eea;
+}
+.category-ranks {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.category-rank-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+.category-icon {
+    font-size: 1.5rem;
+}
+.category-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.category-name {
+    font-weight: 500;
+}
+.category-top {
+    font-size: 0.8rem;
+    color: #999;
+}
+.btn-sm {
+    padding: 6px 14px;
+    font-size: 0.8rem;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+.reward-card {
+    background: linear-gradient(135deg, #fff8e1, #ffecb3);
+}
+.reward-card h3 {
+    margin-bottom: 16px;
+}
+.rewards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.reward-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+}
+.reward-rank {
+    font-weight: 600;
+}
+.reward-prize {
+    color: #f5576c;
+    font-weight: 500;
+}
+.reward-note {
+    text-align: center;
+    color: #999;
+    font-size: 0.85rem;
+    margin-top: 12px;
+}
+.guest-notice {
+    text-align: center;
+    padding: 30px;
+}
+.guest-notice p {
+    color: #666;
+    margin-bottom: 20px;
+}
+.guest-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+.bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    background: white;
+    padding: 12px 0;
+    border-radius: 16px;
+    margin-top: 20px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+}
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+    color: #999;
+    font-size: 0.75rem;
+}
+.nav-item.active {
+    color: #667eea;
+}
+.nav-icon {
+    font-size: 1.3rem;
+}
+</style>
+
+<script>
+// 示例排行榜数据
+const leaderboard = [
+    { rank: 1, name: 'David', avatar: 'user1', score: 3521, accuracy: 92 },
+    { rank: 2, name: 'Alice', avatar: 'user2', score: 2847, accuracy: 88 },
+    { rank: 3, name: 'Emma', avatar: 'user3', score: 2634, accuracy: 85 },
+    { rank: 4, name: 'John', avatar: 'user4', score: 2456, accuracy: 82 },
+    { rank: 5, name: 'Lisa', avatar: 'user5', score: 2187, accuracy: 79 },
+    { rank: 6, name: 'Mike', avatar: 'user6', score: 1923, accuracy: 81 },
+    { rank: 7, name: 'Sarah', avatar: 'user7', score: 1756, accuracy: 77 },
+    { rank: 8, name: 'Tom', avatar: 'user8', score: 1634, accuracy: 75 },
+    { rank: 9, name: 'Kate', avatar: 'user9', score: 1521, accuracy: 73 },
+    { rank: 10, name: 'Jack', avatar: 'user10', score: 1487, accuracy: 71 },
+];
+
+function renderLeaderboard() {
+    const list = document.getElementById('leaderboardList');
+    list.innerHTML = leaderboard.map(user => `
+        <div class="leaderboard-item">
+            <span class="leaderboard-rank ${user.rank <= 3 ? 'top-3' : ''}">#${user.rank}</span>
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${user.avatar}" 
+                 class="leaderboard-avatar" alt="avatar">
+            <div class="leaderboard-info">
+                <div class="leaderboard-name">${user.name}</div>
+                <div class="leaderboard-detail">正确率 ${user.accuracy}%</div>
+            </div>
+            <div class="leaderboard-score">${user.score.toLocaleString()}</div>
+        </div>
+    `).join('');
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+    renderLeaderboard();
+    
+    // 时间筛选
+    document.querySelectorAll('.time-tabs .tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.time-tabs .tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            // 这里可以添加切换数据的逻辑
+        });
+    });
+});
+</script>
+{% endblock %}

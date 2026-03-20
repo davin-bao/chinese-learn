@@ -1,0 +1,562 @@
+{% extends "base.html" %}
+
+{% block title %}词汇本 - ChineseLearn Pro{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>📝 我的词汇本</h1>
+        <p>收藏和学习你的单词</p>
+    </div>
+    
+    {% if user %}
+    <!-- 统计卡片 -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-value" id="totalWords">{{ total_words|default(0) }}</div>
+            <div class="stat-label">总词汇</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="masteredWords">{{ mastered|default(0) }}</div>
+            <div class="stat-label">已掌握</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="learningWords">{{ learning|default(0) }}</div>
+            <div class="stat-label">学习中</div>
+        </div>
+    </div>
+    
+    <!-- 操作按钮 -->
+    <div class="action-buttons">
+        <button class="btn btn-outline" onclick="showAddModal()">
+            <span>➕</span> 添加单词
+        </button>
+        <button class="btn btn-outline" onclick="startReview()">
+            <span>📖</span> 开始复习
+        </button>
+    </div>
+    
+    <!-- 筛选 -->
+    <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all">全部</button>
+        <button class="filter-tab" data-filter="learning">学习中</button>
+        <button class="filter-tab" data-filter="mastered">已掌握</button>
+    </div>
+    
+    <!-- 单词列表 -->
+    <div class="word-list" id="wordList">
+        <div class="word-loading">加载中...</div>
+    </div>
+    
+    <!-- 复习提醒 -->
+    <div class="review-reminder" id="reviewReminder" style="display: none;">
+        <div class="reminder-content">
+            <span class="reminder-icon">🔔</span>
+            <div class="reminder-text">
+                <strong>复习提醒</strong>
+                <p>你有 <span id="dueCount">0</span> 个单词需要复习</p>
+            </div>
+            <button class="btn btn-sm" onclick="startReview()">立即复习</button>
+        </div>
+    </div>
+    
+    {% if not user.is_vip %}
+    <div class="vip-upsell">
+        <div class="upsell-icon">💎</div>
+        <div class="upsell-text">
+            <strong>VIP 功能</strong>
+            <p>解锁AI智能复习、无限词汇本云同步</p>
+        </div>
+        <a href="/vip" class="btn btn-vip btn-sm">开通VIP</a>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <!-- 未登录 -->
+    <div class="card guest-prompt">
+        <h3>登录后使用词汇本</h3>
+        <p>收藏单词、追踪学习进度</p>
+        <div class="guest-actions">
+            <a href="/login" class="btn btn-primary">登录</a>
+            <a href="/register" class="btn btn-secondary">注册</a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <a href="/" class="nav-item">
+            <span class="nav-icon">🏠</span>
+            <span>首页</span>
+        </a>
+        <a href="/learn" class="nav-item">
+            <span class="nav-icon">📖</span>
+            <span>学习</span>
+        </a>
+        <a href="/vocabulary" class="nav-item active">
+            <span class="nav-icon">📝</span>
+            <span>词汇</span>
+        </a>
+        <a href="/profile" class="nav-item">
+            <span class="nav-icon">👤</span>
+            <span>我的</span>
+        </a>
+    </div>
+</div>
+
+<!-- 添加单词弹窗 -->
+<div class="modal" id="addModal" style="display: none;">
+    <div class="modal-backdrop" onclick="hideAddModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>添加单词</h3>
+            <button class="modal-close" onclick="hideAddModal()">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>英文</label>
+                <input type="text" id="newEnglish" placeholder="例如: Hello">
+            </div>
+            <div class="form-group">
+                <label>中文</label>
+                <input type="text" id="newChinese" placeholder="例如: 你好">
+            </div>
+            <div class="form-group">
+                <label>笔记 (可选)</label>
+                <textarea id="newNotes" placeholder="添加记忆技巧或例句"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="hideAddModal()">取消</button>
+            <button class="btn btn-primary" onclick="addWord()">添加</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #667eea;
+}
+.stat-label {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 4px;
+}
+.action-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.btn-outline {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px;
+    background: white;
+    border: 2px solid #667eea;
+    border-radius: 12px;
+    color: #667eea;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.btn-outline:hover {
+    background: #667eea;
+    color: white;
+}
+.filter-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+}
+.filter-tab {
+    padding: 8px 16px;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s;
+}
+.filter-tab.active, .filter-tab:hover {
+    background: white;
+    color: #667eea;
+}
+.word-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.word-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    position: relative;
+}
+.word-card.mastered {
+    border-left: 4px solid #4caf50;
+}
+.word-card.learning {
+    border-left: 4px solid #ff9800;
+}
+.word-english {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+.word-chinese {
+    font-size: 1rem;
+    color: #667eea;
+    margin-bottom: 8px;
+}
+.word-notes {
+    font-size: 0.85rem;
+    color: #666;
+    font-style: italic;
+}
+.word-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+.word-action-btn {
+    padding: 6px 12px;
+    border: 1px solid #e0e0e0;
+    background: white;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.word-action-btn:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+.word-action-btn.delete:hover {
+    border-color: #f44336;
+    color: #f44336;
+}
+.word-status {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+.word-status.learning {
+    background: #fff3e0;
+    color: #ff9800;
+}
+.word-status.mastered {
+    background: #e8f5e9;
+    color: #4caf50;
+}
+.review-reminder {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 20px;
+}
+.reminder-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.reminder-icon {
+    font-size: 1.5rem;
+}
+.reminder-text {
+    flex: 1;
+}
+.reminder-text strong {
+    display: block;
+    color: white;
+}
+.reminder-text p {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.8);
+    margin: 0;
+}
+.vip-upsell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, #fff8e1, #ffecb3);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 20px;
+}
+.upsell-icon {
+    font-size: 1.5rem;
+}
+.upsell-text {
+    flex: 1;
+}
+.upsell-text strong {
+    display: block;
+    color: #333;
+}
+.upsell-text p {
+    font-size: 0.8rem;
+    color: #666;
+    margin: 0;
+}
+.guest-prompt {
+    text-align: center;
+    padding: 40px 20px;
+}
+.guest-prompt h3 {
+    margin-bottom: 8px;
+}
+.guest-prompt p {
+    color: #666;
+    margin-bottom: 20px;
+}
+.guest-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+.bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    background: white;
+    padding: 12px 0;
+    border-radius: 16px;
+    margin-top: 20px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+}
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+    color: #999;
+    font-size: 0.75rem;
+}
+.nav-item.active {
+    color: #667eea;
+}
+.nav-icon {
+    font-size: 1.3rem;
+}
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+}
+.modal-content {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 400px;
+    z-index: 101;
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+}
+.modal-header h3 {
+    margin: 0;
+}
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: #999;
+}
+.modal-body {
+    padding: 20px;
+}
+.form-group {
+    margin-bottom: 16px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #333;
+}
+.form-group input, .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+.form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+.modal-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding: 16px 20px;
+    border-top: 1px solid #eee;
+}
+.word-loading {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+</style>
+
+<script>
+// 示例词汇数据
+const sampleWords = [
+    { id: 1, english: 'Hello', chinese: '你好', notes: '最基础的问候语', status: 'mastered' },
+    { id: 2, english: 'Thank you', chinese: '谢谢', notes: '表达感谢', status: 'mastered' },
+    { id: 3, english: 'Goodbye', chinese: '再见', notes: '告别时使用', status: 'learning' },
+    { id: 4, english: 'Sorry', chinese: '对不起', notes: '道歉用语', status: 'learning' },
+    { id: 5, english: 'Please', chinese: '请', notes: '礼貌用语', status: 'learning' },
+    { id: 6, english: 'How much?', chinese: '多少钱？', notes: '购物时常用', status: 'mastered' },
+];
+
+function renderWords(words) {
+    const container = document.getElementById('wordList');
+    if (words.length === 0) {
+        container.innerHTML = '<div class="empty-state">还没有添加单词，快来添加吧！</div>';
+        return;
+    }
+    
+    container.innerHTML = words.map(word => `
+        <div class="word-card ${word.status}">
+            <span class="word-status ${word.status}">${word.status === 'mastered' ? '已掌握' : '学习中'}</span>
+            <div class="word-english">${word.english}</div>
+            <div class="word-chinese">${word.chinese}</div>
+            ${word.notes ? `<div class="word-notes">📝 ${word.notes}</div>` : ''}
+            <div class="word-actions">
+                <button class="word-action-btn" onclick="playAudio('${word.chinese}')">🔊 朗读</button>
+                <button class="word-action-btn" onclick="markMastered(${word.id})">✓ 掌握</button>
+                <button class="word-action-btn delete" onclick="deleteWord(${word.id})">🗑 删除</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+    renderWords(sampleWords);
+    
+    // 筛选功能
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            const filter = this.dataset.filter;
+            if (filter === 'all') {
+                renderWords(sampleWords);
+            } else {
+                renderWords(sampleWords.filter(w => w.status === filter));
+            }
+        });
+    });
+});
+
+function showAddModal() {
+    document.getElementById('addModal').style.display = 'block';
+}
+
+function hideAddModal() {
+    document.getElementById('addModal').style.display = 'none';
+    document.getElementById('newEnglish').value = '';
+    document.getElementById('newChinese').value = '';
+    document.getElementById('newNotes').value = '';
+}
+
+function addWord() {
+    const english = document.getElementById('newEnglish').value.trim();
+    const chinese = document.getElementById('newChinese').value.trim();
+    const notes = document.getElementById('newNotes').value.trim();
+    
+    if (!english || !chinese) {
+        alert('请填写英文和中文');
+        return;
+    }
+    
+    const newWord = {
+        id: Date.now(),
+        english,
+        chinese,
+        notes,
+        status: 'learning'
+    };
+    
+    sampleWords.unshift(newWord);
+    renderWords(sampleWords);
+    hideAddModal();
+}
+
+function deleteWord(id) {
+    if (confirm('确定要删除这个单词吗？')) {
+        const index = sampleWords.findIndex(w => w.id === id);
+        if (index > -1) {
+            sampleWords.splice(index, 1);
+            renderWords(sampleWords);
+        }
+    }
+}
+
+function markMastered(id) {
+    const word = sampleWords.find(w => w.id === id);
+    if (word) {
+        word.status = 'mastered';
+        renderWords(sampleWords);
+    }
+}
+
+function playAudio(text) {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'zh-CN';
+        speechSynthesis.speak(utterance);
+    } else {
+        alert('您的浏览器不支持语音合成');
+    }
+}
+
+function startReview() {
+    alert('复习功能开发中...');
+}
+</script>
+{% endblock %}

@@ -285,6 +285,38 @@ def submit_answer():
         'chinese': question.chinese
     })
 
+@app.route('/history')
+def history_page():
+    """学习历史页面"""
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('login'))
+    return render_template('history.html', user=user)
+
+@app.route('/api/history')
+def get_history():
+    """获取学习历史"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'error': 'not_logged_in'}), 401
+    
+    progress_list = UserProgress.query.filter_by(user_id=user.id).order_by(
+        UserProgress.answered_at.desc()
+    ).limit(50).all()
+    
+    result = []
+    for p in progress_list:
+        question = Question.query.get(p.question_id)
+        if question:
+            result.append({
+                'english': question.english,
+                'chinese': question.chinese,
+                'is_correct': p.is_correct,
+                'answered_at': p.answered_at.strftime('%Y-%m-%d %H:%M')
+            })
+    
+    return jsonify(result)
+
 @app.route('/vip')
 def vip_page():
     user = get_current_user()
@@ -331,6 +363,76 @@ def get_stats():
         'accuracy': round(correct/total*100, 1) if total > 0 else 0,
         'is_vip': user.is_vip,
         'vip_expire': user.vip_expire.strftime('%Y-%m-%d') if user.vip_expire else None
+    })
+
+# ============== 新页面路由 ==============
+
+@app.route('/learn')
+def learn_page():
+    """学习中心页面"""
+    user = get_current_user()
+    return render_template('learn.html', user=user)
+
+@app.route('/courses')
+def courses_page():
+    """课程中心页面"""
+    user = get_current_user()
+    return render_template('courses.html', user=user)
+
+@app.route('/vocabulary')
+def vocabulary_page():
+    """词汇本页面"""
+    user = get_current_user()
+    return render_template('vocabulary.html', user=user)
+
+@app.route('/settings')
+def settings_page():
+    """用户设置页面"""
+    user = get_current_user()
+    return render_template('settings.html', user=user)
+
+@app.route('/forgot-password')
+def forgot_password_page():
+    """忘记密码页面"""
+    return render_template('forgot-password.html')
+
+@app.route('/achievements')
+def achievements_page():
+    """成就系统页面"""
+    user = get_current_user()
+    # 模拟成就数据
+    achievements = [
+        {'id': 1, 'name': '初学者', 'description': '完成第一道题', 'icon': '🌟', 'category': 'learn', 'points': 10, 'progress': 1, 'target': 1, 'unlocked': True, 'unlocked_at': '2026-01-15'},
+        {'id': 2, 'name': '学习达人', 'description': '完成100道题', 'icon': '📚', 'category': 'learn', 'points': 50, 'progress': 78, 'target': 100, 'unlocked': False},
+        {'id': 3, 'name': '千题斩', 'description': '完成1000道题', 'icon': '🏅', 'category': 'learn', 'points': 200, 'progress': 78, 'target': 1000, 'unlocked': False},
+        {'id': 4, 'name': '坚持不懈', 'description': '连续学习3天', 'icon': '🔥', 'category': 'streak', 'points': 20, 'progress': 3, 'target': 3, 'unlocked': True, 'unlocked_at': '2026-01-17'},
+        {'id': 5, 'name': '周冠军', 'description': '连续学习7天', 'icon': '💪', 'category': 'streak', 'points': 50, 'progress': 5, 'target': 7, 'unlocked': False},
+        {'id': 6, 'name': '月度达人', 'description': '连续学习30天', 'icon': '👑', 'category': 'streak', 'points': 200, 'progress': 5, 'target': 30, 'unlocked': False},
+        {'id': 7, 'name': '全对大师', 'description': '一次完成10道题全对', 'icon': '🎯', 'category': 'special', 'points': 100, 'progress': 0, 'target': 10, 'unlocked': False},
+        {'id': 8, 'name': 'VIP会员', 'description': '开通VIP会员', 'icon': '💎', 'category': 'special', 'points': 30, 'progress': 0, 'target': 1, 'unlocked': False},
+    ]
+    return render_template('achievements.html', user=user, achievements=achievements)
+
+@app.route('/leaderboard')
+def leaderboard_page():
+    """排行榜页面"""
+    user = get_current_user()
+    return render_template('leaderboard.html', user=user)
+
+@app.errorhandler(404)
+def page_not_found(e):
+    """404错误页面"""
+    return render_template('404.html'), 404
+
+@app.route('/api/contact', methods=['POST'])
+def submit_contact():
+    """提交联系表单"""
+    data = request.json
+    # 这里可以添加发送邮件或保存到数据库的逻辑
+    # 目前只返回成功
+    return jsonify({
+        'status': 'ok',
+        'message': '留言已收到，我们会尽快回复你'
     })
 
 # ============== 内容采集（自动） ==============

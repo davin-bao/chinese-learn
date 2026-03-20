@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}用户设置 - ChineseLearn Pro{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>⚙️ 设置</h1>
+        <p>自定义你的学习体验</p>
+    </div>
+    
+    {% if user %}
+    <!-- 用户信息卡片 -->
+    <div class="card user-card">
+        <img src="{{ user.avatar or 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + user.username }}" 
+             class="user-avatar-lg" alt="avatar">
+        <div class="user-details">
+            <h3>{{ user.username }}</h3>
+            <p>{{ user.email }}</p>
+            {% if user.is_vip %}
+            <span class="vip-badge">VIP会员</span>
+            {% endif %}
+        </div>
+        <button class="btn btn-sm btn-outline" onclick="editProfile()">编辑资料</button>
+    </div>
+    
+    <!-- 学习设置 -->
+    <div class="card">
+        <h3 class="section-title">📚 学习设置</h3>
+        
+        <div class="setting-item">
+            <div class="setting-info">
+                <span class="setting-icon">🎯</span>
+                <div>
+                    <strong>每日学习目标</strong>
+                    <p>每天完成的题目数量</p>
+                </div>
+            </div>
+            <select class="setting-select" id="dailyGoal" onchange="saveSetting('dailyGoal', this.value)">
+                <option value="5" {% if daily_goal==5 %}selected{% endif %}>5 题</option>
+                <option value="10" {% if daily_goal==10 %}selected{% endif %}>10 题</option>
+                <option value="15" {% if daily_goal==15 %}selected{% endif %}>15 题</option>
+                <option value="20" {% if daily_goal==20 %}selected{% endif %}>20 题</option>
+            </select>
+        </div>
+        
+        <div class="setting-item">
+            <div class="setting-info">
+                <span class="setting-icon">📖</span>
+                <div>
+                    <strong>学习难度</strong>
+                    <p>根据你的水平调整</p>
+                </div>
+            </div>
+            <select class="setting-select" id="difficulty" onchange="saveSetting('difficulty', this.value)">
+                <option value="auto" {% if difficulty=='auto' %}selected{% endif %}>智能匹配</option>
+                <option value="easy" {% if difficulty=='easy' %}selected{% endif %}>入门</option>
+                <option value="medium" {% if difficulty=='medium' %}selected{% endif %}>进阶</option>
+                <option value="hard" {% if difficulty=='hard' %}selected{% endif %}>高级</option>
+            </select>
+        </div>
+        
+        <div class="setting-item">
+            <div class="setting-info">
+                <span class="setting-icon">🔔</span>
+                <div>
+                    <strong>学习提醒</strong>
+                    <p>每日提醒你坚持学习</p>
+                </div>
+            </div>
+            <label class="toggle">
+                <input type="checkbox" id="reminderEnabled" onchange="saveSetting('reminder', this.checked)">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        
+        <div class="setting-item">
+            <div class="setting-info">
+                <span class="setting-icon">🔊</span>
+                <div>
+                    <strong>语音朗读</strong>
+                    <p>朗读题目和答案</p>
+                </div>
+            </div>
+            <label class="toggle">
+                <input type="checkbox" id="soundEnabled" checked onchange="saveSetting('sound', this.checked)">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <!-- 通知设置 -->
+    <div class="card">
+        <h3 class="section-title">🔔 通知设置</h3>
+        
+        <div class="setting-item">
+            <div class="setting-info">
+                <span class="setting-icon">📧</span>
+                <div>
+                    <strong>邮件通知</strong>
+                    <p>接收学习进度报告</p>
+                </div>
+            </div>
+            <label class="toggle">
+                <input type="checkbox" id="emailNotify" onchange="saveSetting('emailNotify', this.checked)">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        
+        <div class="setting-item">
+            <div class="setting-info">
+                <span class="setting-icon">🎁</span>
+                <div>
+                    <strong>优惠活动</strong>
+                    <p>接收VIP优惠信息</p>
+                </div>
+            </div>
+            <label class="toggle">
+                <input type="checkbox" id="promoNotify" checked onchange="saveSetting('promoNotify', this.checked)">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+    
+    <!-- 账户设置 -->
+    <div class="card">
+        <h3 class="section-title">👤 账户设置</h3>
+        
+        <a href="/change-password" class="setting-link">
+            <span class="setting-icon">🔑</span>
+            <span>修改密码</span>
+            <span class="arrow">›</span>
+        </a>
+        
+        <a href="/privacy" class="setting-link">
+            <span class="setting-icon">🔒</span>
+            <span>隐私政策</span>
+            <span class="arrow">›</span>
+        </a>
+        
+        <a href="/terms" class="setting-link">
+            <span class="setting-icon">📄</span>
+            <span>服务条款</span>
+            <span class="arrow">›</span>
+        </a>
+        
+        <a href="#" class="setting-link" onclick="exportData()">
+            <span class="setting-icon">📥</span>
+            <span>导出数据</span>
+            <span class="arrow">›</span>
+        </a>
+    </div>
+    
+    <!-- Danger Zone -->
+    <div class="card danger-zone">
+        <h3 class="section-title danger">⚠️ 危险区域</h3>
+        
+        <a href="#" class="setting-link danger" onclick="deleteAccount()">
+            <span class="setting-icon">🗑️</span>
+            <span>删除账户</span>
+            <span class="arrow">›</span>
+        </a>
+    </div>
+    
+    <a href="/logout" class="btn btn-logout">退出登录</a>
+    
+    {% else %}
+    <div class="card" style="text-align: center;">
+        <p style="margin-bottom: 20px;">请先登录修改设置</p>
+        <a href="/login" class="btn btn-primary">立即登录</a>
+    </div>
+    {% endif %}
+    
+    <p style="text-align: center; margin-top: 20px;">
+        <a href="/" style="color: white;">返回首页</a>
+    </p>
+</div>
+
+<style>
+.user-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.user-avatar-lg {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+}
+.user-details {
+    flex: 1;
+    min-width: 150px;
+}
+.user-details h3 {
+    margin-bottom: 4px;
+}
+.user-details p {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+.section-title {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #eee;
+}
+.section-title.danger {
+    color: #f44336;
+}
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+.setting-item:last-child {
+    border-bottom: none;
+}
+.setting-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.setting-icon {
+    font-size: 1.3rem;
+}
+.setting-info strong {
+    display: block;
+    font-size: 0.95rem;
+}
+.setting-info p {
+    font-size: 0.8rem;
+    color: #999;
+    margin: 0;
+}
+.setting-select {
+    padding: 8px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    font-size: 0.9rem;
+}
+.toggle {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+}
+.toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 28px;
+}
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+.toggle input:checked + .toggle-slider {
+    background-color: #667eea;
+}
+.toggle input:checked + .toggle-slider:before {
+    transform: translateX(22px);
+}
+.setting-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid #f5f5f5;
+    text-decoration: none;
+    color: #333;
+    transition: all 0.2s;
+}
+.setting-link:last-child {
+    border-bottom: none;
+}
+.setting-link:hover {
+    color: #667eea;
+}
+.setting-link .arrow {
+    margin-left: auto;
+    color: #ccc;
+    font-size: 1.2rem;
+}
+.setting-link.danger {
+    color: #f44336;
+}
+.danger-zone {
+    border: 1px solid #ffcdd2;
+}
+.btn-outline {
+    background: transparent;
+    border: 2px solid #667eea;
+    color: #667eea;
+}
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+}
+.btn-logout {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: #f44336;
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 12px;
+    margin-top: 20px;
+    font-weight: 600;
+}
+</style>
+
+<script>
+function saveSetting(key, value) {
+    // 保存设置到本地存储
+    localStorage.setItem('setting_' + key, value);
+    console.log('Saved:', key, value);
+}
+
+function editProfile() {
+    alert('个人资料编辑功能开发中...');
+}
+
+function exportData() {
+    if (confirm('确定要导出你的学习数据吗？')) {
+        alert('数据导出功能开发中...');
+    }
+}
+
+function deleteAccount() {
+    if (confirm('⚠️ 危险！确定要删除账户吗？此操作不可恢复！')) {
+        if (confirm('真的确定吗？所有数据将被永久删除！')) {
+            alert('账户删除功能开发中...');
+        }
+    }
+}
+</script>
+{% endblock %}

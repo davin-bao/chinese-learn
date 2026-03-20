@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block title %}成就系统 - ChineseLearn Pro{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>🏆 成就系统</h1>
+        <p>解锁成就，见证你的成长</p>
+    </div>
+    
+    <!-- 成就进度 -->
+    <div class="card progress-card">
+        <div class="progress-header">
+            <div class="progress-avatar">
+                <img src="{{ user.avatar if user else 'https://api.dicebear.com/7.x/avataaars/svg?seed=guest' }}" 
+                     alt="avatar">
+            </div>
+            <div class="progress-info">
+                <h3>{{ user.username if user else '游客' }}</h3>
+                <p>已解锁 <span id="unlockedCount">0</span> / {{ achievements|length }} 个成就</p>
+            </div>
+        </div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+        </div>
+        <div class="progress-stats">
+            <div class="stat">
+                <span class="stat-value" id="totalPoints">0</span>
+                <span class="stat-label">成就点数</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="currentStreak">0</span>
+                <span class="stat-label">当前连续</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="bestStreak">0</span>
+                <span class="stat-label">最佳连续</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 成就分类 -->
+    <div class="category-tabs">
+        <button class="tab active" data-category="all">全部</button>
+        <button class="tab" data-category="learn">学习</button>
+        <button class="tab" data-category="streak">连续</button>
+        <button class="tab" data-category="special">特殊</button>
+    </div>
+    
+    <!-- 成就列表 -->
+    <div class="achievements-grid">
+        {% for achievement in achievements %}
+        <div class="achievement-card {% if achievement.unlocked %}unlocked{% else %}locked{% endif %}" 
+             data-category="{{ achievement.category }}">
+            <div class="achievement-icon">
+                {% if achievement.unlocked %}
+                {{ achievement.icon }}
+                {% else %}
+                🔒
+                {% endif %}
+            </div>
+            <div class="achievement-content">
+                <h4>{{ achievement.name }}</h4>
+                <p>{{ achievement.description }}</p>
+                {% if achievement.unlocked %}
+                <div class="achievement-date">解锁于: {{ achievement.unlocked_at }}</div>
+                {% else %}
+                <div class="achievement-progress">
+                    <span>进度: {{ achievement.progress }}/{{ achievement.target }}</span>
+                    <div class="mini-progress">
+                        <div class="mini-fill" style="width: {{ (achievement.progress / achievement.target * 100)|int }}%"></div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="achievement-points">+{{ achievement.points }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- 成就展示墙（已解锁的） -->
+    <div class="card wall-card">
+        <h3>🎖️ 成就展示墙</h3>
+        <p class="wall-desc">选择最多3个成就展示在个人主页</p>
+        <div class="wall-preview" id="wallPreview">
+            <div class="wall-empty">暂无展示成就</div>
+        </div>
+        <button class="btn btn-outline" onclick="editWall()">编辑展示墙</button>
+    </div>
+    
+    {% if not user %}
+    <div class="card guest-notice">
+        <p>登录后解锁成就系统，记录你的学习成就</p>
+        <div class="guest-actions">
+            <a href="/login" class="btn btn-primary">登录</a>
+            <a href="/register" class="btn btn-secondary">注册</a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- 底部导航 -->
+    <div class="bottom-nav">
+        <a href="/" class="nav-item">
+            <span class="nav-icon">🏠</span>
+            <span>首页</span>
+        </a>
+        <a href="/learn" class="nav-item">
+            <span class="nav-icon">📖</span>
+            <span>学习</span>
+        </a>
+        <a href="/achievements" class="nav-item active">
+            <span class="nav-icon">🏆</span>
+            <span>成就</span>
+        </a>
+        <a href="/profile" class="nav-item">
+            <span class="nav-icon">👤</span>
+            <span>我的</span>
+        </a>
+    </div>
+</div>
+
+<style>
+.progress-card {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+.progress-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.progress-avatar img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid white;
+}
+.progress-info h3 {
+    margin-bottom: 4px;
+}
+.progress-info p {
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+.progress-bar-container {
+    height: 10px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+.progress-bar {
+    height: 100%;
+    background: white;
+    border-radius: 5px;
+    transition: width 0.5s ease;
+}
+.progress-stats {
+    display: flex;
+    justify-content: space-around;
+}
+.stat {
+    text-align: center;
+}
+.stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+.stat-label {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+.category-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+.tab {
+    padding: 8px 16px;
+    border: none;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s;
+}
+.tab.active, .tab:hover {
+    background: white;
+    color: #667eea;
+}
+.achievements-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.achievement-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+}
+.achievement-card.locked {
+    opacity: 0.6;
+}
+.achievement-card.locked .achievement-icon {
+    filter: grayscale(1);
+}
+.achievement-icon {
+    font-size: 2.5rem;
+    flex-shrink: 0;
+}
+.achievement-content {
+    flex: 1;
+    min-width: 0;
+}
+.achievement-content h4 {
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+.achievement-content p {
+    font-size: 0.85rem;
+    color: #666;
+    margin: 0;
+}
+.achievement-date {
+    font-size: 0.75rem;
+    color: #4caf50;
+    margin-top: 6px;
+}
+.achievement-progress {
+    margin-top: 8px;
+}
+.achievement-progress span {
+    font-size: 0.8rem;
+    color: #999;
+}
+.mini-progress {
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+}
+.mini-fill {
+    height: 100%;
+    background: #667eea;
+    border-radius: 2px;
+}
+.achievement-points {
+    background: linear-gradient(135deg, #ffd700, #ffaa00);
+    color: #333;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+.wall-card {
+    margin-top: 20px;
+}
+.wall-card h3 {
+    margin-bottom: 8px;
+}
+.wall-desc {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 16px;
+}
+.wall-preview {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    min-height: 80px;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+.wall-empty {
+    color: #999;
+    font-size: 0.9rem;
+}
+.btn-outline {
+    background: transparent;
+    border: 2px solid #667eea;
+    color: #667eea;
+    width: 100%;
+}
+.guest-notice {
+    text-align: center;
+    padding: 30px;
+}
+.guest-notice p {
+    color: #666;
+    margin-bottom: 20px;
+}
+.guest-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+.bottom-nav {
+    display: flex;
+    justify-content: space-around;
+    background: white;
+    padding: 12px 0;
+    border-radius: 16px;
+    margin-top: 20px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+}
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+    color: #999;
+    font-size: 0.75rem;
+}
+.nav-item.active {
+    color: #667eea;
+}
+.nav-icon {
+    font-size: 1.3rem;
+}
+</style>
+
+<script>
+// 示例成就数据
+const achievements = [
+    { id: 1, name: '初学者', description: '完成第一道题', icon: '🌟', category: 'learn', points: 10, progress: 1, target: 1, unlocked: true, unlocked_at: '2026-01-15' },
+    { id: 2, name: '学习达人', description: '完成100道题', icon: '📚', category: 'learn', points: 50, progress: 78, target: 100, unlocked: false },
+    { id: 3, name: '千题斩', description: '完成1000道题', icon: '🏅', category: 'learn', points: 200, progress: 78, target: 1000, unlocked: false },
+    { id: 4, name: '坚持不懈', description: '连续学习3天', icon: '🔥', category: 'streak', points: 20, progress: 3, target: 3, unlocked: true, unlocked_at: '2026-01-17' },
+    { id: 5, name: '周冠军', description: '连续学习7天', icon: '💪', category: 'streak', points: 50, progress: 5, target: 7, unlocked: false },
+    { id: 6, name: '月度达人', description: '连续学习30天', icon: '👑', category: 'streak', points: 200, progress: 5, target: 30, unlocked: false },
+    { id: 7, name: '全对大师', description: '一次完成10道题全对', icon: '🎯', category: 'special', points: 100, progress: 0, target: 10, unlocked: false },
+    { id: 8, name: 'VIP会员', description: '开通VIP会员', icon: '💎', category: 'special', points: 30, progress: 0, target: 1, unlocked: false },
+];
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+    updateProgress();
+    
+    // 分类筛选
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            const category = this.dataset.category;
+            filterAchievements(category);
+        });
+    });
+});
+
+function updateProgress() {
+    const unlocked = achievements.filter(a => a.unlocked);
+    const totalPoints = unlocked.reduce((sum, a) => sum + a.points, 0);
+    
+    document.getElementById('unlockedCount').textContent = unlocked.length;
+    document.getElementById('totalPoints').textContent = totalPoints;
+    document.getElementById('progressBar').style.width = (unlocked.length / achievements.length * 100) + '%';
+}
+
+function filterAchievements(category) {
+    document.querySelectorAll('.achievement-card').forEach(card => {
+        if (category === 'all' || card.dataset.category === category) {
+            card.style.display = 'flex';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+function editWall() {
+    alert('展示墙编辑功能开发中...');
+}
+</script>
+{% endblock %}

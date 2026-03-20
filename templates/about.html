@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block title %}关于我们 - ChineseLearn Pro{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>关于我们</h1>
+        <p>让中文学习变得简单有趣</p>
+    </div>
+    
+    <div class="card">
+        <div class="about-logo">
+            <span style="font-size: 4rem;">🇨🇳</span>
+            <h2>ChineseLearn Pro</h2>
+            <p class="version">Version 1.0.0</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>🎯 我们的使命</h3>
+        <p style="color: #666; line-height: 1.8;">
+            我们致力于帮助全球中文学习者通过科学、有趣的方法掌握中文。无论你是初学者还是进阶学习者，我们都能为你提供合适的学习内容和练习机会。
+        </p>
+    </div>
+    
+    <div class="card">
+        <h3>✨ 核心功能</h3>
+        <ul class="feature-list">
+            <li>
+                <span class="feature-icon">📝</span>
+                <div>
+                    <strong>智能出题</strong>
+                    <p>根据你的水平自动匹配难度</p>
+                </div>
+            </li>
+            <li>
+                <span class="feature-icon">🎮</span>
+                <div>
+                    <strong>游戏化学习</strong>
+                    <p>每日挑战，连续学习更有动力</p>
+                </div>
+            </li>
+            <li>
+                <span class="feature-icon">📊</span>
+                <div>
+                    <strong>进度追踪</strong>
+                    <p>详细记录你的学习轨迹</p>
+                </div>
+            </li>
+            <li>
+                <span class="feature-icon">💎</span>
+                <div>
+                    <strong>VIP会员</strong>
+                    <p>解锁全部功能，畅学无限</p>
+                </div>
+            </li>
+        </ul>
+    </div>
+    
+    <div class="card">
+        <h3>📈 统计数据</h3>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-number">20+</div>
+                <div class="stat-label">精选题目</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">5</div>
+                <div class="stat-label">学习分类</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">3</div>
+                <div class="stat-label">每日免费</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">随时学习</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>🏆 我们的优势</h3>
+        <ul class="advantage-list">
+            <li>✅ 简洁易用的界面设计</li>
+            <li>✅ 科学的学习曲线</li>
+            <li>✅ 实用的日常对话</li>
+            <li>✅ 灵活的学习方式</li>
+            <li>✅ 持续更新的题库</li>
+        </ul>
+    </div>
+    
+    <div class="card">
+        <h3>📅 发展历程</h3>
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="timeline-date">2026.03</div>
+                    <div class="timeline-text">ChineseLearn Pro 正式发布</div>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="timeline-date">2026.02</div>
+                    <div class="timeline-text">产品内测优化</div>
+                </div>
+            </div>
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <div class="timeline-date">2026.01</div>
+                    <div class="timeline-text">项目启动</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <p style="text-align: center; margin-top: 20px;">
+        <a href="/" style="color: white;">返回首页</a>
+    </p>
+</div>
+
+<style>
+.about-logo {
+    text-align: center;
+    padding: 20px 0;
+}
+.about-logo h2 {
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+.version {
+    color: #999;
+    font-size: 0.9rem;
+}
+.feature-list {
+    list-style: none;
+}
+.feature-list li {
+    display: flex;
+    gap: 15px;
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+}
+.feature-list li:last-child {
+    border-bottom: none;
+}
+.feature-icon {
+    font-size: 1.5rem;
+}
+.feature-list strong {
+    display: block;
+    margin-bottom: 4px;
+}
+.feature-list p {
+    font-size: 0.9rem;
+    color: #666;
+}
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+.stat-box {
+    background: #f8f9ff;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+}
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #667eea;
+}
+.stat-label {
+    font-size: 0.85rem;
+    color: #666;
+}
+.advantage-list {
+    list-style: none;
+    line-height: 2;
+}
+.advantage-list li {
+    color: #333;
+}
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+.timeline-item {
+    position: relative;
+    padding-bottom: 20px;
+}
+.timeline-dot {
+    position: absolute;
+    left: -30px;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    background: #667eea;
+    border-radius: 50%;
+}
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -25px;
+    top: 12px;
+    width: 2px;
+    height: 100%;
+    background: #e0e0e0;
+}
+.timeline-item:last-child::before {
+    display: none;
+}
+.timeline-date {
+    font-size: 0.85rem;
+    color: #667eea;
+    margin-bottom: 4px;
+}
+.timeline-text {
+    color: #333;
+}
+</style>
+{% endblock %}
